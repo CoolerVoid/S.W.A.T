@@ -5,18 +5,6 @@
 # Early in the morning of 12/02/2012
 #
 
-export black='\E[30;47m'
-export red='\E[31;47m'
-export green='\E[32;47m'
-export yellow='\E[33;47m'
-export blue='\E[34;47m'
-export magenta='\E[35;47m'
-export cyan='\E[36;47m'
-export white='\E[37;47m'
-
-# Reset text terminal
-export alias ResetTerminal="tput sgr0" 
-
 # colored echo
 # $1 = message
 # $2 = color
@@ -81,9 +69,28 @@ function it_email_report
 
 # Iteratively set up the configurations
 function ids_setup_iterative {
+    local OPT=""
     PROJECT_NAME=`it_create_project`
     DIR_FIRE=`it_fire_dir`
-    EMAIL_REPORT=`it_email_report`
+
+    echo "[!] You want receive report of Incidents by email ?"
+    
+    while [ "x$OPT" = "" ];
+    do
+        read -p "[y/n]" OPT
+        OPT=`echo "$OPT" | tr '[:lower:]' '[:upper:]'`
+        if [ "x$OPT" != "xy" -o "x$OPT" != "xx" ];
+        then
+            OPT=""
+        fi
+    done
+
+    if [ "x$OPT" = "xy" ];
+    then
+        EMAIL_REPORT=`it_email_report`
+    fi
+
+    
 }
 
 function generate_cksum_database {
@@ -140,10 +147,17 @@ function check_project_files
     do
         if [ ! -d "$file" ];
         then
-            echo "[-] Directory $file is missing."
+            echo "[-] [$file] [MISSING]"
             ERROR=1
+        else
+            becho "[+] [$file] [FOUND]"
         fi
     done
 
     return $ERROR
+}
+
+function aborting
+{
+    exit $1
 }

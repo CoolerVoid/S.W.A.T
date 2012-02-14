@@ -1,12 +1,12 @@
 #!/bin/bash
 
-WORKSPACE_DIR="clean"
+WORKSPACE_DIR="workspace"
 PROJECT_DIR=""
 PROJECT_NAME=""
-CUR_DIR="current"
+TEMP_DIR="current"
 FIRE_DIR=""
 NEW_PROJECT="false"
-CLEAN_PROJECT_FILE=""
+CURRENT_CLEAN_FILE=""
 EMAIL_REPORT=""
 EXCLUDE_DIR=""
 INTERACTIVE="false"
@@ -30,8 +30,7 @@ function show_help {
     echo
     echo "************************************************************"
     echo "* Options"
-    echo -e "* -w\tWorkspace where store the checksum database and configurations"
-    echo -e "* -o\tWorkspace where store the checksum of the monitored paths"
+    echo -e "* -w\tWorkspace where store project directories"
     echo -e "* -d\tDirectory that need monitoring for attacks"
     echo -e "* -p\tName of the project, this is used for restore a session existent"
     echo -e "* -e\tEmail to report incidents"
@@ -43,7 +42,7 @@ function show_help {
     exit 0    
 }
 
-while getopts ":w:o:d:p:e:x:nh" opt; 
+while getopts ":w:d:p:e:x:nh" opt; 
 do
     case $opt in
 	w)
@@ -53,9 +52,6 @@ do
                 echo "-w option invalid, $WORKSPACE_DIR is not a directory or permission denied to stat it"
                 exit 1
             fi
-	    ;;
-	o)
-	    CUR_DIR="$OPTARG"
 	    ;;
 	d)
 	    FIRE_DIR="$OPTARG"
@@ -90,6 +86,25 @@ do
 done
 
 shift $(($OPTIND - 1))
+
+main
+
+function main
+{
+    if [ -z "$PROJECT_NAME" -o -z "$FIRE_DIR" ];
+    then
+        if [ "x$ITERATIVE" = "x" ];
+        then
+            ids_setup_iterative
+        else
+            echo "[-] -d <dir-under-fire> and -p <project-name> are required options."
+            echo "[!] Or you could use -i for configure in interactive mode."
+            aborting 1
+        fi
+    fi
+
+    
+}
 
 if [ "x$NEW_PROJECT" = "xtrue" ];
 then
@@ -137,9 +152,17 @@ then
         elif [ "x$OPT" = "xr" ];
         then
             echo "[+] Using configurations in $PROJECT_DIR to start $SOFTWARE_NAME"
-            echo "[+] checking if is a valid project directory. Wait a minute..."
+            echo "[+] Checking if is a valid project directory. Wait a minute..."
             check_project_files
             is_valid=$?
+            if [ $is_valid -eq 1 ];
+            then
+                echo "[-] Directory $PROJECT_DIR is not a valid project."
+                echo "[-] Aborting..."
+                aborting 0
+            else
+                echo "[+] Using $PROJECT_DIR as project configuration"
+            fi
         fi
     fi
 
@@ -148,19 +171,19 @@ then
         FIRE_DIR=`it_fire_dir`
     fi
     
-    CLEAN_PROJECT_FILE="$WORKSPACE_DIR/$PROJECT_NAME.cksum"
+    CURRENT_CLEAN_FILE="$WORKSPACE_DIR/$PROJECT_NAME.cksum"
     echo -n "generating new database for directory "
     becho "$FIRE_DIR\n"
     echo -n "Saving result in "
-    becho "$CLEAN_PROJECT_FILE\n"
-    generate_cksum_database "$FIRE_DIR" "$CLEAN_PROJECT_FILE"
+    becho "$CURRENT_CLEAN_FILE\n"
+    generate_cksum_database "$FIRE_DIR" "$CURRENT_CLEAN_FILE"
     if [ ! "x$EXCLUDE_DIR" = "x" ];
     then
 	OLD_IFS="$IFS"
 	export IFS=","
 	for x_dir in $EXCLUDE_DIR;
 	do
-	    exclude_dir_from_file "$CLEAN_PROJECT_FILE" "$x_dir"
+	    exclude_dir_from_file "$CURRENT_CLEAN_FILE" "$x_dir"
 	done
 	export IFS="$OLD_IFS"
     fi
@@ -183,7 +206,7 @@ echo "Entering monitor mode..."
 while true;
 do
     CUR_DATE=`date +%Y-%m-%d-%H.%M.%S`
-    CUR_FILE="$CUR_DIR/$PROJECT_NAME-$CUR_DATE.cksum"
+    CUR_FILE="$TEMP_DIR/$PROJECT_NAME-$CUR_DATE.cksum"
     generate_cksum_database "$FIRE_DIR" "$CUR_FILE"
     if [ ! "x$EXCLUDE_DIR" = "$EXCLUDE_DIR" ];
     then
@@ -197,7 +220,7 @@ do
     fi
 
     cksum_all_cur=`md5sum "$CUR_FILE" | cut -d' ' -f1`
-    cksum_all_clean=`md5sum "$CLEAN_PROJECT_FILE" | cut -d' ' -f1`
+    cksum_all_clean=`md5sum "$CURRENT_CLEAN_FILE" | cut -d' ' -f1`
 
     CUR_FILE_BK="$CUR_FILE.bk"
     cp "$CUR_FILE" "$CUR_FILE.bk"
@@ -213,7 +236,7 @@ do
 	REPORT=""
 	while read -r cksum_cur file_cur;
 	do
-	    file_in_clean=`cat "$CLEAN_PROJECT_FILE" | grep "$file_cur\$" | head -1`
+	    file_in_clean=`cat "$CURRENT_CLEAN_FILE" | grep "$file_cur\$" | head -1`
 	    
 	    cksum_clean=""
 #	    echo "verifying $file_in_clean"
@@ -236,9 +259,9 @@ do
 	echo
 	echo "sending this log to your email: $EMAIL_REPORT"
 	echo -e "Your project $PROJECT_NAME have files modified in the directory \"$FIRE_DIR\".\nWe strongly recommend that you check the archives below, they may have been modified by an intruder. \n\n$REPORT" | mail -t "$EMAIL_REPORT" -a "FROM: isdis@secplus.com.br" -s "[WARNING] i4k Simple Intrusion Detection System"
-	mv "$CLEAN_PROJECT_FILE" "$CLEAN_PROJECT_FILE.1"
+	mv "$CURRENT_CLEAN_FILE" "$CURRENT_CLEAN_FILE.1"
 	sleep 3
-	cp "$CUR_FILE_BK" "$CLEAN_PROJECT_FILE"
+	cp "$CUR_FILE_BK" "$CURRENT_CLEAN_FILE"
     fi
 
     echo -n "."
