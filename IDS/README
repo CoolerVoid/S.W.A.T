@@ -1,0 +1,15 @@
+IDS - Intrusion Detection System
+Author: Tiago Natel de Moura aka i4k
+
+This project is a PoC of various ideias that I've been thinking about IDS.
+BASH isn't the best language for this task, but is the most fast to interact
+with the unix operating system. If this project succeed, I will rewrite the
+core daemon in C.
+
+If you want more information about that, please contact me!
+
+natel [at] secplus.com.br
+
+Thanks in advance!
+
+

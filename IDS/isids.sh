@@ -92,8 +92,6 @@ function main
         create_new_project
     fi
 
-    echo "acabamos a configuração :)"
-    aborting 0
 }
 
 function create_new_project
