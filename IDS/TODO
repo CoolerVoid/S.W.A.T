@@ -1,0 +1,16 @@
+# main goal: Minimize the CPU task and time of analysis
+
+# Idea:
+# Core daemon for managing tasks.
+# Split the tasks in various tools that uses FIFO for communication with
+# the core.
+
+# tOOls:
+# shell finders
+# MD5 check files
+# monitor file timestamps
+# monitor shells spawned
+# monitor access.log/errors.log from apache
+# monitor process created
+# monitor tmp for file uploads
+ 
