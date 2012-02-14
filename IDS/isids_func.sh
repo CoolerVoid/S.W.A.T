@@ -62,7 +62,7 @@ function it_email_report
 {
     EMAIL_REPORT=""
     read -p "Type a valid email to send incident reports: " EMAIL_REPORT
-    EMAIL_REPORT=`echo "$EMAIL_REPORT | grep '^[a-zA-Z0-9._%+-]*@[a-zA-Z0-9]*[\.[a-zA-Z0-9]*]*[a-zA-Z0-9]$'`
+    EMAIL_REPORT=`echo "$EMAIL_REPORT" | grep '^[a-zA-Z0-9._%+-]*@[a-zA-Z0-9]*[\.[a-zA-Z0-9]*]*[a-zA-Z0-9]$'`
 
     echo "$EMAIL_REPORT"
 }
@@ -73,7 +73,7 @@ function ids_setup_iterative {
     PROJECT_NAME=`it_create_project`
     DIR_FIRE=`it_fire_dir`
 
-    echo "[!] You want receive report of Incidents by email ?"
+    echo "[!] Do you want receive reports of incidents by email ?"
     
     while [ "x$OPT" = "" ];
     do
@@ -88,9 +88,7 @@ function ids_setup_iterative {
     if [ "x$OPT" = "xy" ];
     then
         EMAIL_REPORT=`it_email_report`
-    fi
-
-    
+    fi    
 }
 
 function generate_cksum_database {
@@ -159,5 +157,6 @@ function check_project_files
 
 function aborting
 {
+    echo "aborting..."
     exit $1
 }

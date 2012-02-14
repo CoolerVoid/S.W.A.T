@@ -11,6 +11,8 @@ EMAIL_REPORT=""
 EXCLUDE_DIR=""
 INTERACTIVE="false"
 
+DEFAULT_PROJECT_DIRS=( "history-files" "proc" "logs" "reports" )
+
 
 source define.sh
 source isids_func.sh
@@ -103,68 +105,118 @@ function main
         fi
     fi
 
-    
-}
-
-if [ "x$NEW_PROJECT" = "xtrue" ];
-then
-    becho "[+]"
-    becho " Creating new project.\n"
-    while [ "x$PROJECT_NAME" = "x" ];
-    do
-	read -p "Type a project name: " PROJECT_NAME
-    done
-
     PROJECT_DIR="$WORKSPACE_DIR/$PROJECT_NAME"
 
+    if [ "x$NEW_PROJECT" = "x" ];
+    then
+        create_new_project
+    fi
+}
+
+function create_new_project
+{
+    becho "[+] Creating new project.\n"
     # Checking if the project already exists
     if [ -d "$PROJECT_DIR" ];
     then
         becho "[-] Directory $PROJECT_DIR already exists.\n"
-        echo "What you want to do? [choice below]"
-        echo "[d] Delete this project and create new project."
-        echo "[r] Start $SOFTWARE_NAME with this project configuration."
-        OPT=""
-        while [ "x$OPT" = "x" ];
-        do
-            read -p "type (d/r): " OPT
-            if [ ! "x$OPT" = "xd" -o ! "$xOPT" = "xr" ];
-            then
-                OPT=""
-            fi
-        done
+        if [ "x$INTERACTIVE" = "xtrue" ];
+        then
+            echo "What you want to do? [choice below]"
+            echo "[d] Delete this project and create new project."
+            echo "[r] Start $SOFTWARE_NAME with this project configuration."
+            OPT=""
+            while [ "x$OPT" = "x" ];
+            do
+                read -p "type (d/r): " OPT
+                if [ ! "x$OPT" = "xd" -o ! "$xOPT" = "xr" ];
+                then
+                    OPT=""
+                fi
+            done
 
-        if [ "x$OPT" = "xd" -a "xPROJECT_DIR"];
-        then
-            becho "[DANGER] This operation is very dangerous!!!\n"
-            becho "[DANGER] The directory '$PROJECT_DIR' will be DELETED permanetly"
-            OPT="n"
-            read -p "Confirm ? (y/n)" OPT
-            if [ "x$OPT" = "xy" -o "x$OPT" = "xY" ];
+            if [ "x$OPT" = "xd" -a "xPROJECT_DIR"];
             then
-                echo "[+] removing the directory $PROJECT_DIR and its subfolders"
+                becho "[DANGER] This operation is very dangerous!!!\n"
+                becho "[DANGER] The directory '$PROJECT_DIR' will be DELETED permanetly"
+                OPT="n"
+                read -p "Confirm ? (y/n)" OPT
+                if [ "x$OPT" = "xy" -o "x$OPT" = "xY" ];
+                then
+                    echo "[+] removing the directory $PROJECT_DIR and its subfolders"
                 # THIS IS REALLY SAFE??? I GUESS ...
-                rm -rf "$PROJECT_DIR"
-            else
-                echo "[-] aborting"
-                exit 0
-            fi
-        elif [ "x$OPT" = "xr" ];
-        then
-            echo "[+] Using configurations in $PROJECT_DIR to start $SOFTWARE_NAME"
-            echo "[+] Checking if is a valid project directory. Wait a minute..."
-            check_project_files
-            is_valid=$?
-            if [ $is_valid -eq 1 ];
+                    rm -rf "$PROJECT_DIR"
+                else
+                    echo "[-] aborting"
+                    exit 0
+                fi
+            elif [ "x$OPT" = "xr" ];
             then
-                echo "[-] Directory $PROJECT_DIR is not a valid project."
-                echo "[-] Aborting..."
-                aborting 0
-            else
-                echo "[+] Using $PROJECT_DIR as project configuration"
+                echo "[+] Using configurations in $PROJECT_DIR to start $SOFTWARE_NAME"
+                echo "[+] Checking if is a valid project directory. Wait a minute..."
+                check_project_files
+                is_valid=$?
+                if [ $is_valid -eq 1 ];
+                then
+                    echo "[-] Directory $PROJECT_DIR is not a valid project."
+                    echo "[-] Aborting..."
+                    aborting 0
+                else
+                    echo "[+] Using $PROJECT_DIR as project configuration"
+                fi
             fi
         fi
+    else
+        local WORKSPACE=`dirname "$PROJECT_DIR"`
+        # workspace exists ?
+        if [ ! -d "$WORKSPACE" ];
+        then
+            becho "[-] [$WORKSPACE][DIRECTORY NOT FOUND]\n"
+            echo "aborting..."
+            aborting 1
+        fi
+
+        # is writable ?
+        if [ ! -w "$WORKSPACE" ];
+        then
+            becho "[-][$WORKSPACE][NOT WRITABLE]\n"
+            echo "[!] The workspace is not a directory writable by `whoami`"
+            echo "[!] Possible solution: $ chown `whoami`.`whoami` $WORKSPACE"
+            echo "aborting..."
+            aborting $1
+        fi
+
+        mkdir "$PROJECT_DIR"
+        if [ $? -ne 0 ];
+        then
+            becho "[-] Failed to create directory '$PROJECT_DIR'"
+            becho "[!] check permissions..."
+            aborting 1
+        fi
+        cd "$PROJECT_DIR"
+
+        # creating default project directories
+        for dir in $(seq 0 $((${#DEFAULT_PROJECT_DIRS[@]} - 1)));
+        do
+            mkdir "$dir"
+        done
+
+        # creating user file configuration
+        touch "$PROJECT_NAME".conf
+        if [ $? -ne 0 ];
+        then
+            becho "[-] Failed to create file '$PROJECT_DIR/$PROJECT_NAME.conf'"
+            becho "[!] check permissions..."
+            aborting 1
+        fi
+        
     fi
+        
+}
+
+    PROJECT_DIR="$WORKSPACE_DIR/$PROJECT_NAME"
+
+
 
     if [ "x$FIRE_DIR" = "x" ];
     then
