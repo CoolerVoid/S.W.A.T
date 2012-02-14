@@ -151,27 +151,29 @@ function check_project_files
 
     echo "[!] Project exists! Checking if is a valid project directory..."
     
-    PROJECT_DIRS="$DIR/history-files" "$DIR/proc" "$DIR/logs" "$DIR/reports"
-    PROJECT_FILES="$DIR/$NAME.conf"
+    PROJECT_DIRS=( "$DIR/history-files" "$DIR/proc" "$DIR/logs" "$DIR/reports" )
+    PROJECT_FILES=( "$DIR/$NAME.conf" )
 
 
-    for file in $PROJECT_FILES;
+    for i in $(seq 0 $((${#PROJECT_FILES[@]} - 1)));
     do
-        if [ ! -f "$file" ];
+        if [ ! -f "${PROJECT_FILES[$i]}" ];
         then
-            echo "[-] File $file is missing."
+            becho "[-][`basename ${PROJECT_FILES[$i]}`][MISSING]\n"
             ERROR=1
+        else
+            becho "[+][`basename ${PROJECT_FILES[$i]}`][FOUND]\n"
         fi
     done
 
-    for file in $PROJECT_DIRS;
+    for i in $(seq 0 $((${#PROJECT_DIRS[@]} - 1)));
     do
-        if [ ! -d "$file" ];
+        if [ ! -d "${PROJECT_DIRS[$i]}" ];
         then
-            echo "[-] [$file] [MISSING]"
+            becho "[-][`basename ${PROJECT_DIRS[$i]}`][MISSING]\n"
             ERROR=1
         else
-            becho "[+] [$file] [FOUND]"
+            becho "[+][`basename ${PROJECT_DIRS[$i]}`][FOUND]\n"
         fi
     done
 

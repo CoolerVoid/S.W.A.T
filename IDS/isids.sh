@@ -79,9 +79,8 @@ function main
     is_valid=$?
     if [ $is_valid -eq 0 ];
     then
-        echo "[!] Directory $PROJECT_DIR already exists and is OK"
-        echo "[+] Using $PROJECT_DIR configurations file"
-        echo "[!][WARNING] The command line options will overwrite the configurations in file $PROJECT_CONF"
+        echo "[!] Everything alright! Using this project"
+        becho "[!][WARNING] The command line options will overwrite the configurations in file $PROJECT_CONF\n"
     elif [ $is_valid -eq 1 ];
     then
         echo "[-] Directory $PROJECT_DIR exists but is not a valid project."
